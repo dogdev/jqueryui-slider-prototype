@@ -1,2 +1,2 @@
 # jqueryui-slider-prototype
-Draft version of jQury UI slider
+Draft version of jQuery UI slider
