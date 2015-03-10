@@ -45,7 +45,15 @@
     };
 
     Graph.prototype.get = function( key ) {
-        return $.extend( {}, this._nodes[ key ].value );
+        var self = this;
+
+        if ( typeof key !== "undefined" ) {
+            return $.extend( {}, this._nodes[ key ].value );
+        }
+
+        return Object.keys(this._nodes).map( function( key ) {
+            return self.get( key );
+        });
     };
 
     Graph.prototype.set = function( key, newValue ) {
@@ -69,7 +77,7 @@
         return typeof this._nodes[ key ] !== "undefined";
     };
 
-    var ROOT_NODE = 'ROOT_NODE';
+    var ROOT_NODE = "ROOT_NODE";
 
     $.widget("ui.rangeSlider", {
         version: "0.0.1",
@@ -94,25 +102,57 @@
         },
 
         _render: function() {
-            
+            var handlers = $("<div>"),
+                self = this,
+                ranges = this._rangesGraph.get();
+
+            this.element.addClass("ui-rangeslider ui-slider-track");
+
+            ranges.forEach( function( range ) {
+                if ( range.root ) {
+                    return;
+                }
+
+                var first = $("<div class='ui-slider-handle ui-btn' />"),
+                    last = $("<div class='ui-slider-handle ui-btn' />"),
+                    rangeBg = $("<div class='ui-slider-range-bg' />"),
+                    rangeHandlers = $("<div class='ui-rangeslider-range' />");
+
+                self._placeHandlers( first, last, rangeBg, range.values );
+                rangeHandlers.append(rangeBg).append(first).append(last).appendTo(handlers);
+            });
+
+            this.element.append(handlers);
+        },
+
+        _placeHandlers: function( firstHandler, lastHandler, rangeBg, values ) {
+            var min = this.options.min,
+                full = this.options.max - min,
+                firstValue = values[0] - min,
+                lastValue = values[1] - min,
+                firstLeft = 100 * firstValue / full,
+                lastLeft = 100 * lastValue / full;
+
+            firstHandler.css({ left: firstLeft + "%"  });
+            lastHandler.css({ left: lastLeft + "%"  });
+            rangeBg.css({ left: firstLeft + "%", width: (lastLeft - firstLeft) + "%"  });
         },
         
         _buildGraph: function() {
             var rangesKeys = Object.keys( this.options.ranges ),
-                vertices,
                 self = this;
 
             this._rangesGraph = new Graph( {
                 childrenSort: function( a, b ) {
-                    if ( typeof a.values === 'undefined' && typeof b.values === 'undefined' ) {
+                    if ( typeof a.values === "undefined" && typeof b.values === "undefined" ) {
                         return 0;
                     }
 
-                    if ( typeof a.values === 'undefined' ) {
+                    if ( typeof a.values === "undefined" ) {
                         return -1;
                     }
 
-                    if ( typeof b.values === 'undefined' ) {
+                    if ( typeof b.values === "undefined" ) {
                         return 1;
                     }
 
@@ -129,6 +169,7 @@
             } );
 
             this._rangesGraph.add( ROOT_NODE, {
+                root: true,
                 min: this.options.min,
                 max: this.options.max
             });
@@ -173,6 +214,7 @@
 
                     if ( lastChildrenMax !== null ) {
                         correctValues[ 0 ] = Math.max( correctValues[ 0 ], lastChildrenMax + 1 );
+                        correctValues[ 1 ] = Math.max( correctValues[ 0 ], correctValues[ 1 ] );
                     }
 
                     //invariant: push to queue only ranges with correct values
