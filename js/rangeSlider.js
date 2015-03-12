@@ -1,85 +1,7 @@
 (function( $ ) {
-    var Graph = function( params ) {
-        params = $.extend( {
-            childrenSort: false
-        }, params );
-
-        this._childrenSort = params.childrenSort;
-        this._nodes = {};
-        this._neighbours = {};
-    };
-
-    Graph.prototype.add = function( key, value ) {
-        if ( this.containsKey( key ) ) {
-            return;
-        }
-
-        this._nodes[ key ] = {
-            value: $.extend( {}, value ),
-            parent: null
-        };
-
-        this._neighbours[ key ] = [];
-    };
-
-    Graph.prototype.connect = function( key1, key2 ) {
-        var self = this;
-
-        if ( !this.containsKey( key1 ) ||  !this.containsKey( key1 )) {
-            return;
-        }
-
-        if ( this._neighbours[ key1].indexOf( key2 ) !== -1 ) {
-            return;
-        }
-
-        this._neighbours[ key1 ].push( key2 );
-
-        if ( this._childrenSort ) {
-            this._neighbours[ key1 ].sort( function( a, b ) {
-                return self._childrenSort( self.get( a ), self.get( b ) );
-            });
-        }
-
-        this._nodes[ key2].parent = key1;
-    };
-
-    Graph.prototype.get = function( key ) {
-        var self = this;
-
-        if ( typeof key !== "undefined" ) {
-            return $.extend( {}, this._nodes[ key ].value );
-        }
-
-        return Object.keys(this._nodes).map( function( key ) {
-            return self.get( key );
-        });
-    };
-
-    Graph.prototype.set = function( key, newValue ) {
-        var oldValue = this._nodes[ key ].value;
-        this._nodes[ key ].value = $.extend( {}, oldValue, newValue );
-    };
-
-    Graph.prototype.isVertex = function( key ) {
-        return this._nodes[ key ].parent === null;
-    };
-
-    Graph.prototype.neighbours = function( key ) {
-        return this._neighbours[ key ];
-    };
-
-    Graph.prototype.keys = function() {
-        return Object.keys(this._nodes);
-    };
-
-    Graph.prototype.containsKey = function( key ) {
-        return typeof this._nodes[ key ] !== "undefined";
-    };
-
     var ROOT_NODE = "ROOT_NODE";
 
-    $.widget("ui.rangeSlider", {
+    $.widget("ui.rangeslider", {
         version: "0.0.1",
         widgetEventPrefix: "slide",
 
@@ -94,7 +16,7 @@
             start: null,
             stop: null
         },
-        
+
         _create: function() {
             this._buildGraph();
             this._normalize( ROOT_NODE );
@@ -102,42 +24,38 @@
         },
 
         _render: function() {
-            var handlers = $("<div>"),
+            var handlers = $( "<div class='ui-rangeslider-sliders'>" ),
+                min = this.options.min, max = this.options.max,
                 self = this,
                 ranges = this._rangesGraph.get();
 
-            this.element.addClass("ui-rangeslider ui-slider-track");
+            this.element.addClass( "ui-rangeslider" );
 
             ranges.forEach( function( range ) {
                 if ( range.root ) {
                     return;
                 }
 
-                var first = $("<div class='ui-slider-handle ui-btn' />"),
-                    last = $("<div class='ui-slider-handle ui-btn' />"),
-                    rangeBg = $("<div class='ui-slider-range-bg' />"),
-                    rangeHandlers = $("<div class='ui-rangeslider-range' />");
+                var sliderFirst, sliderLast,
+                    first = $( format( "<input type='range' value='%s' min='%s' max='%s'  />", range.values[ 0 ],  min, max ) ),
+                    last = $( format( "<input type='range' value='%s' min='%s' max='%s'  />", range.values[ 1 ],  min, max )  );
 
-                self._placeHandlers( first, last, rangeBg, range.values );
-                rangeHandlers.append(rangeBg).append(first).append(last).appendTo(handlers);
+                first.slider();
+                last.slider();
+
+                sliderFirst = self._getSlider( first ).slider;
+                sliderLast = self._getSlider( last ).slider;
+
+                handlers.append( sliderFirst ).append( sliderLast );
             });
 
-            this.element.append(handlers);
+            this.element.append( handlers );
         },
 
-        _placeHandlers: function( firstHandler, lastHandler, rangeBg, values ) {
-            var min = this.options.min,
-                full = this.options.max - min,
-                firstValue = values[0] - min,
-                lastValue = values[1] - min,
-                firstLeft = 100 * firstValue / full,
-                lastLeft = 100 * lastValue / full;
-
-            firstHandler.css({ left: firstLeft + "%"  });
-            lastHandler.css({ left: lastLeft + "%"  });
-            rangeBg.css({ left: firstLeft + "%", width: (lastLeft - firstLeft) + "%"  });
+        _getSlider: function( el ) {
+            return $.data( el.get( 0 ), "mobile-slider" ) || $.data( el.slider().get( 0 ), "mobile-slider" );
         },
-        
+
         _buildGraph: function() {
             var rangesKeys = Object.keys( this.options.ranges ),
                 self = this;
