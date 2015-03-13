@@ -9,6 +9,8 @@
             min: 0,
             max: 100,
             ranges: {},
+            highlight: true,
+            highlightColor: "#3388cc",
 
             // callbacks
             change: null,
@@ -24,36 +26,78 @@
         },
 
         _render: function() {
-            var handlers = $( "<div class='ui-rangeslider-sliders'>" ),
-                min = this.options.min, max = this.options.max,
+            var _mainTrack = null, v,
+                _sliders = $( "<div class='ui-rangeslider-sliders' />"),
                 self = this,
-                ranges = this._rangesGraph.get();
+                queue = [  ROOT_NODE ],
+                highlightColor = this.options.highlightColor;
 
+            this.element.attr( "data-role", "rangeslider" );
             this.element.addClass( "ui-rangeslider" );
+            _sliders.appendTo( this.element );
 
-            ranges.forEach( function( range ) {
-                if ( range.root ) {
-                    return;
-                }
+            while ( queue.length > 0 ) {
+                v = queue.shift();
 
-                var sliderFirst, sliderLast,
-                    first = $( format( "<input type='range' value='%s' min='%s' max='%s'  />", range.values[ 0 ],  min, max ) ),
-                    last = $( format( "<input type='range' value='%s' min='%s' max='%s'  />", range.values[ 1 ],  min, max )  );
+                self._rangesGraph.neighbours( v ).forEach(function( n ) {
+                    var range = self._rangesGraph.get( n ),
+                        highlight, firstWidget, lastWidget, firstLeft, lastLeft,
+                        first = $( self._createSliderInput( range.values[ 0 ] ) ),
+                        last = $( self._createSliderInput( range.values[ 1 ] ) );
 
-                first.slider();
-                last.slider();
+                    first.appendTo( self.element ).slider().textinput();
+                    last.appendTo( self.element ).slider().textinput();
 
-                sliderFirst = self._getSlider( first ).slider;
-                sliderLast = self._getSlider( last ).slider;
+                    firstWidget = self._getSliderWidget( first );
+                    lastWidget = self._getSliderWidget( last );
 
-                handlers.append( sliderFirst ).append( sliderLast );
+                    firstWidget.slider.prependTo( _sliders );
+                    lastWidget.slider.prependTo( _sliders );
+
+                    if ( _mainTrack === null ) {
+                        _mainTrack = firstWidget.slider;
+                        lastWidget.handle.appendTo( _mainTrack );
+                    } else {
+                        lastWidget.handle.appendTo( _mainTrack );
+                        firstWidget.handle.appendTo( _mainTrack );
+                    }
+
+                    firstLeft = parseInt( firstWidget.handle.get( 0 ).style.left, 10 );
+                    lastLeft = parseInt( lastWidget.handle.get( 0 ).style.left, 10 );
+
+                    highlight = $( "<div class='ui-slider-bg ui-btn-active'>" );
+                    highlight.css({
+                        left: firstLeft + "%",
+                        width: ( lastLeft - firstLeft ) + "%",
+                        backgroundColor: highlightColor
+                    })
+                    .appendTo( _mainTrack );
+
+                    queue.push( n );
+                });
+
+                highlightColor = shadeColor( highlightColor, -0.25 );
+            }
+
+            $.extend( this, {
+                _mainTrack: _mainTrack,
+                _sliders: _sliders
             });
-
-            this.element.append( handlers );
         },
 
-        _getSlider: function( el ) {
-            return $.data( el.get( 0 ), "mobile-slider" ) || $.data( el.slider().get( 0 ), "mobile-slider" );
+        _getSliderWidget: function( el ) {
+            return $.data( el.get( 0 ), "mobile-slider" );
+        },
+
+        _createSliderInput: function( value ) {
+            var min = this.options.min, max = this.options.max,
+                highlight = this.options.highlight,
+                step = this.options.step;
+            value = value || min;
+
+            return format(
+                "<input type='number' data-type='range' value='%s' step='%s' min='%s' max='%s'  />",
+                value, step, min, max );
         },
 
         _buildGraph: function() {

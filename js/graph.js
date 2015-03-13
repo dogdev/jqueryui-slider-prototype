@@ -46,15 +46,9 @@ Graph.prototype.connect = function( key1, key2 ) {
 };
 
 Graph.prototype.get = function( key ) {
-    var self = this;
-
     if ( typeof key !== "undefined" ) {
         return $.extend( {}, this._nodes[ key ].value );
     }
-
-    return Object.keys(this._nodes).map( function( key ) {
-        return self.get( key );
-    });
 };
 
 Graph.prototype.set = function( key, newValue ) {
