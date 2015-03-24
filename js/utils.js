@@ -1,6 +1,6 @@
-( function( global ) {
+( function( exports ) {
 
-global.format = function() {
+exports.format = function() {
     var args = Array.prototype.slice.apply( arguments ),
         arg,
         txt = args.shift();
@@ -13,7 +13,22 @@ global.format = function() {
     return txt;
 };
 
-global.shadeColor = function( color, percent ) {
+exports.transformToArray = function( ob, defaultOb ) {
+    var key, item,
+        arr = [];
+    defaultOb = $.extend( {}, defaultOb );
+
+    for ( key in ob ) {
+        item = $.extend( {}, defaultOb, ob[ key ], {
+            key: key
+        });
+        arr.push( item );
+    }
+
+    return arr;
+};
+
+exports.shadeColor = function( color, percent ) {
     var f = parseInt( color.slice( 1 ), 16 ),
         t = percent < 0 ? 0 : 255,
         p = percent < 0 ? percent * - 1 : percent,
@@ -30,4 +45,4 @@ global.shadeColor = function( color, percent ) {
         ).toString( 16 ).slice( 1 );
 };
 
-}( window ) );
+}( $ ) );

@@ -1,0 +1,19 @@
+.slider-track {
+    position: relative;
+    height: 14px;
+    background: #e6e6e6;
+}
+
+.slider-track > .handle {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    margin-top: -15px;
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(0,0,0,0.09);
+    border: 1px solid #fff;
+    background: #fff;
+    box-sizing: border-box;
+}

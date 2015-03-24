@@ -2,10 +2,11 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>Slider Prototype</title>
-    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+    <title>Slider Track</title>
+    <link rel="stylesheet" href="css/slider-track.css" />
     <style>
         body {
+            font-family: Arial;
             background: #f5f5f5;
         }
 
@@ -13,46 +14,33 @@
             width: 800px;
             margin: 20px auto;
         }
-
-        [data-role="rangeslider"] .ui-slider-bg {
-            position: absolute;
-            height: 100%;
-        }
-
-        [data-role="rangeslider"]  .ui-slider-input {
-            display: none;
-        }
     </style>
 </head>
 <body>
     <div id="wrapper">
-        <h1>range slider</h1>
+        <h1>slider track</h1>
         <div id="slider"></div>
     </div>
 
     <script src="js/jquery.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/graph.js"></script>
-    <script src="js/jquery.mobile.js"></script>
-    <script src="js/rangeSlider.js"></script>
+    <script src="js/jquery-ui.js"></script>
+    <script src="js/sliderTrack.js"></script>
     <script>
-        $('#slider').rangeslider({
+        $( "#slider" ).slidertrack({
             min: 0,
-            max: 20,
-            ranges: {
-                'range2': {
-                    parent: 'range1',
-                    values: [ 4, 8 ]
+            max: 10,
+            handles: {
+                handle1: {
+                    start: 0,
+                    stop: 5,
+                    value: 2
                 },
-                'range4': {
-                    parent: 'range1',
-                    values: [ 3, 5 ]
-                },
-                'range3': {
-                    values: [ 5, 16 ]
-                },
-                'range1': {
-                    values: [ 2, 10 ]
+                handle2: {
+                    start: 5,
+                    stop: 10,
+                    value: 5
                 }
             }
         });
