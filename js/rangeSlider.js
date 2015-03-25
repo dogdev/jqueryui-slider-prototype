@@ -1,194 +1,137 @@
-(function( $ ) {
-    var ROOT_NODE = "ROOT_NODE";
+$( function( $ ) {
 
-    $.widget("ui.rangeslider", {
-        version: "0.0.1",
-        widgetEventPrefix: "slide",
+$.widget("ui.rangeslider", $.ui.multislider, {
+    version: "0.0.1",
+    widgetEventPrefix: "rangeslider",
 
-        options: {
-            min: 0,
-            max: 100,
-            ranges: {},
-            highlight: true,
-            highlightColor: "#3388cc",
+    // initialization
 
-            // callbacks
-            change: null,
-            slide: null,
-            start: null,
-            stop: null
-        },
+    options: {
+        min: 0,
+        max: 100,
+        step: 1,
+        values: [],
+        ranges: null,
 
-        _create: function() {
-            this._buildGraph();
-            this._normalize( ROOT_NODE );
-            this._render();
-        },
+        // callbacks
+        change: null
+    },
 
-        _render: function() {
-            var _mainTrack = null, v,
-                _sliders = $( "<div class='ui-rangeslider-sliders' />"),
-                self = this,
-                queue = [  ROOT_NODE ],
-                highlightColor = this.options.highlightColor;
+    _create: function() {
+        this._initRanges();
+        this._super();
+        this._createHighlight();
+    },
 
-            this.element.attr( "data-role", "rangeslider" );
-            this.element.addClass( "ui-rangeslider" );
-            _sliders.appendTo( this.element );
+    _initRanges: function() {
+        var _ranges;
 
-            while ( queue.length > 0 ) {
-                v = queue.shift();
-
-                self._rangesGraph.neighbours( v ).forEach(function( n ) {
-                    var range = self._rangesGraph.get( n ),
-                        highlight, firstWidget, lastWidget, firstLeft, lastLeft,
-                        first = $( self._createSliderInput( range.values[ 0 ] ) ),
-                        last = $( self._createSliderInput( range.values[ 1 ] ) );
-
-                    first.appendTo( self.element ).slider().textinput();
-                    last.appendTo( self.element ).slider().textinput();
-
-                    firstWidget = self._getSliderWidget( first );
-                    lastWidget = self._getSliderWidget( last );
-
-                    firstWidget.slider.prependTo( _sliders );
-                    lastWidget.slider.prependTo( _sliders );
-
-                    if ( _mainTrack === null ) {
-                        _mainTrack = firstWidget.slider;
-                        lastWidget.handle.appendTo( _mainTrack );
-                    } else {
-                        lastWidget.handle.appendTo( _mainTrack );
-                        firstWidget.handle.appendTo( _mainTrack );
-                    }
-
-                    firstLeft = parseInt( firstWidget.handle.get( 0 ).style.left, 10 );
-                    lastLeft = parseInt( lastWidget.handle.get( 0 ).style.left, 10 );
-
-                    highlight = $( "<div class='ui-slider-bg ui-btn-active'>" );
-                    highlight.css({
-                        left: firstLeft + "%",
-                        width: ( lastLeft - firstLeft ) + "%",
-                        backgroundColor: highlightColor
-                    })
-                    .appendTo( _mainTrack );
-
-                    queue.push( n );
-                });
-
-                highlightColor = shadeColor( highlightColor, -0.25 );
-            }
-
-            $.extend( this, {
-                _mainTrack: _mainTrack,
-                _sliders: _sliders
-            });
-        },
-
-        _getSliderWidget: function( el ) {
-            return $.data( el.get( 0 ), "mobile-slider" );
-        },
-
-        _createSliderInput: function( value ) {
-            var min = this.options.min, max = this.options.max,
-                highlight = this.options.highlight,
-                step = this.options.step;
-            value = value || min;
-
-            return format(
-                "<input type='number' data-type='range' value='%s' step='%s' min='%s' max='%s'  />",
-                value, step, min, max );
-        },
-
-        _buildGraph: function() {
-            var rangesKeys = Object.keys( this.options.ranges ),
-                self = this;
-
-            this._rangesGraph = new Graph( {
-                childrenSort: function( a, b ) {
-                    if ( typeof a.values === "undefined" && typeof b.values === "undefined" ) {
-                        return 0;
-                    }
-
-                    if ( typeof a.values === "undefined" ) {
-                        return -1;
-                    }
-
-                    if ( typeof b.values === "undefined" ) {
-                        return 1;
-                    }
-
-                    if ( a.values[ 0 ] > b.values[ 0 ]  ) {
-                        return 1;
-                    }
-
-                    if ( a.values[ 0 ] < b.values[ 0 ]  ) {
-                        return -1;
-                    }
-
-                    return 0;
-                }
-            } );
-
-            this._rangesGraph.add( ROOT_NODE, {
-                root: true,
-                min: this.options.min,
-                max: this.options.max
-            });
-
-            rangesKeys.forEach( function( key ) {
-                self._rangesGraph.add( key, self.options.ranges[ key ] );
-            });
-
-            rangesKeys.forEach( function( key ) {
-                var range = self.options.ranges[ key ];
-
-                if ( range.parent && self.options.ranges[ range.parent ] !== "undefined" ) {
-                    self._rangesGraph.connect( self.options.ranges[ key ].parent, key );
-                }
-            });
-
-            self._rangesGraph.keys().forEach( function( key ) {
-                if ( self._rangesGraph.isVertex( key ) && key !== ROOT_NODE ) {
-                    self._rangesGraph.connect( ROOT_NODE, key );
-                }
-            });
-        },
-
-        _normalize: function( rootNode ) {
-            var v, parentNode, parentValues, lastChildrenMax,
-                queue = [ rootNode ],
-                rangesGraph = this._rangesGraph;
-
-            while( queue.length > 0 ) {
-                v = queue.shift();
-                parentNode = rangesGraph.get( v );
-                parentValues = v === ROOT_NODE ? [ parentNode.min - 1, parentNode.max + 1 ] : parentNode.values;
-                lastChildrenMax = null;
-
-                rangesGraph.neighbours( v ).forEach( function( n ) {
-                    var childrenNode = rangesGraph.get( n ),
-                        correctValues = childrenNode.values || [ parentValues[ 0 ] + 1, parentValues[ 1 ] - 1 ];
-
-                    correctValues[ 0 ] = Math.min( correctValues[ 0 ], correctValues[ 1 ] );
-                    correctValues[ 0 ] = Math.max( correctValues[ 0 ], parentValues[ 0 ] + 1 );
-                    correctValues[ 1 ] = Math.min( correctValues[ 1 ], parentValues[ 1 ] - 1 );
-
-                    if ( lastChildrenMax !== null ) {
-                        correctValues[ 0 ] = Math.max( correctValues[ 0 ], lastChildrenMax + 1 );
-                        correctValues[ 1 ] = Math.max( correctValues[ 0 ], correctValues[ 1 ] );
-                    }
-
-                    //invariant: push to queue only ranges with correct values
-                    rangesGraph.set( n, {
-                        values: correctValues
-                    });
-
-                    lastChildrenMax = correctValues[ 1 ];
-                    queue.push( n );
-                });
-            }
+        if ( this.options.ranges === null ) {
+            _ranges = [ { key: "range", values: this.options.values } ];
+        } else {
+            _ranges = $.transformToArray( this.options.ranges );
         }
-    });
 
-}(jQuery));
+        this._ranges = _ranges.sort( this._sortByFirstValue );
+    },
+
+    _createHighlight: function() {
+        var that = this;
+
+        this._ranges.forEach( function( range ) {
+            that._renderHighlight( range.key );
+            that._refreshHighlight( range.key );
+        });
+    },
+
+    //render
+
+    _renderHighlight: function( rangeKey ) {
+        var sliderTrack = this._track,
+            highlightNode = $( "<div class='slider-highlight' />" );
+
+        highlightNode.prependTo( sliderTrack );
+
+        this._highlight = this._highlight || {};
+        this._highlight[ rangeKey ] = highlightNode;
+    },
+
+    _refreshHighlight: function( rangeKey ) {
+        var left1 = this._track.slidertrack( "handlePosition", rangeKey + ":0" ).fromBegin,
+            left2 = this._track.slidertrack( "handlePosition", rangeKey + ":1" ).fromBegin;
+
+        this._highlight[ rangeKey ].css({
+            left: left1 + "%",
+            width: ( left2 - left1 ) + "%"
+        });
+    },
+
+    // events
+
+    _handlechange: function( event, ui ) {
+        var key = ui.handleKey.split( ":" ),
+            anotherValue = this._handleValue( this._anotherHandle( ui.handleKey ) );
+
+        this._updateNeighbours( ui.handleKey, ui.value );
+        this._refreshHighlight( key[ 0 ] );
+
+        this._trigger("change", event, {
+            range: key[ 0 ],
+            index: +key[ 1 ],
+            value: ui.value,
+            values: [ ui.value, anotherValue ].sort()
+        });
+    },
+
+    //helpers
+
+    _sortByFirstValue: function( a, b ) {
+        if (a.values[ 0 ] > b.values[ 0 ] ) {
+            return 1;
+        }
+        if (a.values[ 0 ] < b.values[ 0 ] ) {
+            return -1;
+        }
+        return 0;
+    },
+    
+    _handles: function() {
+        var ranges = this._ranges,
+            prevKey, start = this.options.min,
+            handles = {},
+            self = this;
+
+        ranges.forEach( function( range ) {
+            var i, handleKey;
+
+            for ( i = 0; i < 2; i++ ) {
+                handleKey = range.key + ":" + i;
+
+                handles[ handleKey ] = {
+                    start: start,
+                    value: range.values[ i ]
+                };
+
+                if ( typeof handleKey[ prevKey ] !== "undefined" ) {
+                    handles[ prevKey ].stop = range.values[ i ];
+                }
+
+                start = range.values[ i ];
+                prevKey = handleKey;
+            }
+        });
+
+        return handles;
+    },
+    
+    _handleValue: function( key ) {
+        return this._track.slidertrack( "value", key );
+    },
+
+    _anotherHandle: function( key ) {
+        key = key.split( ":" );
+        return key[ 0 ] + ( key[ 1 ] === "0" ? ":1" : ":0" );
+    }
+});
+
+} ( jQuery ) );

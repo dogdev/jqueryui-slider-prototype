@@ -12,8 +12,24 @@
     height: 30px;
     width: 30px;
     border-radius: 50%;
-    box-shadow: 0 0 3px rgba(0,0,0,0.09);
+    box-shadow: 0 0 4px rgba(0,0,0,0.3);
     border: 1px solid #fff;
     background: #fff;
     box-sizing: border-box;
+    transform: translateX(-50%);
+    transition: border-color 200ms ease;
+}
+
+.slider-track > .handle.active {
+    border-color: #4d90fe;
+}
+
+.slider-track > .slider-highlight {
+    position: absolute;
+    height: 100%;
+    background: #4d90fe;
+}
+
+button:focus {
+    outline: none;
 }

@@ -13,7 +13,7 @@ $.widget("ui.slidertrack", $.ui.mouse, {
         handles: {},
 
         // callbacks
-        handleChange: null
+        handlechange: null
     },
 
     _handleOptions: function() {
@@ -43,26 +43,25 @@ $.widget("ui.slidertrack", $.ui.mouse, {
     // render
 
     _renderHandles: function() {
-        var handlesNodes = "";
+        var _handlesNodes = {},
+            self = this;
 
         this._handles.forEach( function( handle ) {
-            handlesNodes += $.format( "<div class='handle' data-key='%s'></div>", handle.key );
+            _handlesNodes[ handle.key ] = $( $.format( "<span class='handle' data-key='%s'></span>", handle.key ) );
+            _handlesNodes[ handle.key].appendTo( self.element );
         });
 
         this.element.addClass( "slider-track" );
-        this.element.html( handlesNodes );
+        this._handlesNodes = _handlesNodes;
     },
     
     _refreshHandle: function( key ) {
         var handle = this._handle( key );
 
         var valueInPercent = this._percent( handle.value ),
-            handleNode = this._handleNode( handle.key),
-            handleWidth = handleNode.width() / 2,
-            width = this.element.width(),
-            handleWidthInPercent = handleWidth * 100 / width;
+            handleNode = this._handleNode( handle.key);
 
-        handleNode.css( { "left": ( valueInPercent - handleWidthInPercent ) + "%" } );
+        handleNode.css( { "left": valueInPercent + "%" } );
     },
 
     _createHandles: function() {
@@ -75,13 +74,18 @@ $.widget("ui.slidertrack", $.ui.mouse, {
     },
 
     _handleNode: function( key ) {
-        return this.element.find( $.format( "[data-key='%s']", key ) );
+        if ( typeof key === "undefined" || typeof this._handlesNodes[ key ] === "undefined" ) {
+            return null;
+        }
+
+        return this._handlesNodes[ key ];
     },
 
     // events
 
     _mouseCapture: function( event ) {
-        var capturedElement = $( event.target ),
+        var handleNode,
+            capturedElement = $( event.target ),
             mouseValue = this._mouseValue( event );
 
         if ( this._lastChangedHandle === null || capturedElement.is( ".handle" ) ) {
@@ -90,6 +94,7 @@ $.widget("ui.slidertrack", $.ui.mouse, {
             this._activeHandle = this._lastChangedHandle;
         }
 
+        this._selectHandle( this._activeHandle );
         this._changeValue( this._activeHandle, mouseValue );
         return true;
     },
@@ -102,17 +107,26 @@ $.widget("ui.slidertrack", $.ui.mouse, {
 
     //methods
 
-    _changeValue: function ( key, value ) {
-        var that = this;
+    _changeValue: function ( key, value, allowToChangeLast ) {
+        var that = this,
+            handle = this._handle( key ),
+            oldValue = handle.value;
 
-        this._handles.forEach( function( handle ) {
-            if (handle.key === key ) {
-                handle.value = that._trimHandleValue( value, handle );
-            }
-        });
+        if ( typeof allowToChangeLast === "undefined" ) {
+            allowToChangeLast = true;
+        }
 
-        this._lastChangedHandle = key;
+        handle.value = this._trimHandleValue( value, handle );
+
+        this._lastChangedHandle = allowToChangeLast ? key : this._lastChangedHandle;
         this._refreshHandle( key );
+
+        if ( oldValue !== handle.value ) {
+            this._trigger( "handlechange", null, {
+                handleKey: key,
+                value: handle.value
+            });
+        }
     },
 
     _handle: function ( key ) {
@@ -126,19 +140,52 @@ $.widget("ui.slidertrack", $.ui.mouse, {
 
         return handle;
     },
+    
+    _selectHandle: function ( key ) {
+        var handleNode = this._handleNode( this._activeHandle),
+            lastChangedHandleNode = this._handleNode( this._lastChangedHandle );
+
+        if ( lastChangedHandleNode !== null ) {
+            lastChangedHandleNode.removeClass( "active" );
+            lastChangedHandleNode.css( { zIndex: 0 } );
+        }
+
+        handleNode.addClass( "active" );
+        handleNode.css( { zIndex: 1 } );
+    },
 
     //public
 
     handleStart: function( key, value ) {
+        if ( typeof key === "undefined" ) {
+            return;
+        }
+
+        key = key.toString();
         var handle = this._handle( key );
+
+        if ( handle === null ) {
+            return;
+        }
+
         handle.start = value;
-        this._changeValue( key, handle.value );
+        this._changeValue( key, handle.value, false );
     },
 
     handleStop: function( key, value ) {
+        if ( typeof key === "undefined" ) {
+            return;
+        }
+
+        key = key.toString();
         var handle = this._handle( key );
+
+        if ( handle === null ) {
+            return;
+        }
+
         handle.stop = value;
-        this._changeValue( key, handle.value );
+        this._changeValue( key, handle.value, false );
     },
 
     value: function ( key, value ) {
@@ -147,6 +194,21 @@ $.widget("ui.slidertrack", $.ui.mouse, {
         }
 
         this._changeValue( key, value );
+    },
+
+    handlePosition: function( key ) {
+        var handleStyle,
+            handleNode = this._handleNode( key );
+
+        if ( handleNode === null ) {
+            return null;
+        }
+
+        handleStyle = handleNode.get( 0 ).style;
+
+        return {
+            fromBegin: parseInt( handleStyle.left, 10 )
+        }
     },
     
     // helpers

@@ -4,44 +4,132 @@
     <meta charset="UTF-8">
     <title>Slider Track</title>
     <link rel="stylesheet" href="css/slider-track.css" />
-    <style>
-        body {
-            font-family: Arial;
-            background: #f5f5f5;
-        }
+    <link rel="stylesheet" href="css/style.css" />
 
-        #wrapper {
-            width: 800px;
-            margin: 20px auto;
-        }
-    </style>
+    <script src="js/jquery.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/jquery-ui.js"></script>
+
+    <script src="js/sliderTrack.js"></script>
+    <script src="js/singleSlider.js"></script>
+    <script src="js/multiSlider.js"></script>
+    <script src="js/rangeSlider.js"></script>
 </head>
 <body>
     <div id="wrapper">
         <h1>slider track</h1>
-        <div id="slider"></div>
+        <div id="slider-track"></div>
+        <div class="console-block"><div></div></div>
+
+        <h1>single slider</h1>
+        <div id="single-slider"></div>
+        <div class="console-block"><div></div></div>
+
+        <h1>multi slider</h1>
+        <div id="multi-slider"></div>
+        <div class="console-block"><div></div></div>
+
+        <h1>range slider</h1>
+        <div id="range-slider"></div>
+        <div class="console-block"><div></div></div>
+
+        <h1>multi range slider</h1>
+        <div id="multi-range-slider"></div>
+        <div class="console-block"><div></div></div>
+
     </div>
 
-    <script src="js/jquery.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/graph.js"></script>
-    <script src="js/jquery-ui.js"></script>
-    <script src="js/sliderTrack.js"></script>
     <script>
-        $( "#slider" ).slidertrack({
+        var $sliderTrack = $( "#slider-track" ),
+            $singleSlider = $( "#single-slider" ),
+            $multiSlider = $( "#multi-slider" ),
+            $rangeSlider = $( "#range-slider" ),
+            $multiRangeSlider = $( "#multi-range-slider"),
+
+            $sliderTrackCode = $sliderTrack.next(),
+            $singleSliderCode = $singleSlider.next(),
+            $multiSliderCode = $multiSlider.next(),
+            $rangeSliderCode = $rangeSlider.next(),
+            $multiRangeSliderCode = $multiRangeSlider.next(),
+                
+            log = function ( codeBlock, text ) {
+                codeBlock.children( "div" ).append( text );
+                codeBlock.scrollTop( codeBlock.children( "div" ).height() );
+            };
+
+        $sliderTrack.slidertrack({
             min: 0,
-            max: 10,
+            max: 100,
             handles: {
                 handle1: {
-                    start: 0,
-                    stop: 5,
-                    value: 2
+                    value: 20
                 },
                 handle2: {
-                    start: 5,
-                    stop: 10,
-                    value: 5
+                    value: 50
+                },
+                handle3: {
+                    value: 70
                 }
+            },
+            handlechange: function ( event, ui ) {
+                log( $sliderTrackCode,
+                    $.format( "<section> " +
+                        "<span>handlechange:</span> `%s` changed value to %s " +
+                    "<section>", ui.handleKey, ui.value )
+                );
+            }
+        });
+
+        $singleSlider.singleslider({
+            min: 0,
+            max: 100,
+            value: 50,
+            change: function ( event, ui ) {
+                log( $singleSliderCode,
+                    $.format( "<section> <span>change:</span> changed value to %s <section>", ui.value )
+                );
+            }
+        });
+
+        $multiSlider.multislider({
+            min: 0,
+            max: 100,
+            values: [ 10, 20, 80 ],
+            change: function ( event, ui ) {
+                log( $multiSliderCode,
+                    $.format( "<section> " +
+                        "<span>change:</span> handle with index `%s` changed value to %s " +
+                    "<section>", ui.index, ui.value )
+                );
+            }
+        });
+
+        $rangeSlider.rangeslider({
+            min: 0,
+            max: 100,
+            values: [ 10, 60 ],
+            change: function ( event, ui ) {
+                log( $rangeSliderCode,
+                    $.format( "<section> " +
+                        "<span>change:</span> handle with index `%s` changed value to %s, all values: %s " +
+                    "<section>", ui.index, ui.value, ui.values )
+                );
+            }
+        });
+
+        $multiRangeSlider.rangeslider({
+            min: 0,
+            max: 100,
+            ranges: {
+                range1: { values: [ 10, 55 ] },
+                range2: { values: [ 65, 85 ] }
+            },
+            change: function ( event, ui ) {
+                log( $multiRangeSliderCode,
+                    $.format( "<section> " +
+                        "<span>change:</span> handle of range `%s` with index `%s` changed value to %s, all values: %s " +
+                    "<section>", ui.range, ui.index, ui.value, ui.values )
+                );
             }
         });
     </script>
