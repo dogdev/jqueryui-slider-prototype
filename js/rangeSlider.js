@@ -79,11 +79,21 @@ $.widget("ui.rangeslider", $.ui.multislider, {
             range: key[ 0 ],
             index: +key[ 1 ],
             value: ui.value,
-            values: [ ui.value, anotherValue ].sort()
+            values: [ ui.value, anotherValue ].sort( this._sortValues )
         });
     },
 
     //helpers
+
+    _sortValues: function( a, b ) {
+        if ( a > b ) {
+            return 1;
+        }
+        if ( a < b ) {
+            return -1;
+        }
+        return 0;
+    },
 
     _sortByFirstValue: function( a, b ) {
         if (a.values[ 0 ] > b.values[ 0 ] ) {
@@ -112,7 +122,7 @@ $.widget("ui.rangeslider", $.ui.multislider, {
                     value: range.values[ i ]
                 };
 
-                if ( typeof handleKey[ prevKey ] !== "undefined" ) {
+                if ( typeof handles[ prevKey ] !== "undefined" ) {
                     handles[ prevKey ].stop = range.values[ i ];
                 }
 
